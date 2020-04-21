@@ -19,24 +19,22 @@ Import the library:
 `import "github.com/vanclief/ez"`
 
 Creating an error:
-
 ```
 const op = "TestNew"
-err := New(op, ECONFLICT, "An error message", nil)
+err := ez.New(op, ECONFLICT, "An error message", nil)
 ```
 
 Creating nested errors:
-
 ```
 const op = "TestNew"
-err1 := New(op, EINTERNAL, "Nested error", nil)
-err2 := New(op, ECONFLICT, "Another error", err1)
+err1 := ez.New(op, EINTERNAL, "Nested error", nil)
+err2 := ez.New(op, ECONFLICT, "Another error", err1)
 ```
 
 Return the string interpretation of an error:
 ```
 const op = "TestError"
-err := New(op, EINTERNAL, "An internal error", nil)
+err := ez.New(op, EINTERNAL, "An internal error", nil)
 
 err.Error() >> "TestError: <internal> An internal error"
 ```
@@ -44,15 +42,15 @@ err.Error() >> "TestError: <internal> An internal error"
 Return the code of the root error:
 ```
 const op = "TestErrorCode"
-err := New(op, EINVALID, "An invalid error", nil)
+err := ez.New(op, EINVALID, "An invalid error", nil)
 
-ErrorCode(err) >> "invalid"
+ez.ErrorCode(err) >> "invalid"
 ```
 
 Return the human readable code:
 ```
 const op = "TestErrorMessage"
-err := New(op, ENOTFOUND, "A not found error", nil)
+err := ez.New(op, ENOTFOUND, "A not found error", nil)
 
-ErrorMessage(err) >> "A not found error"
+ez.ErrorMessage(err) >> "A not found error"
 ```
