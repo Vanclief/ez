@@ -1,4 +1,4 @@
-module github.com/Vanclief/ez
+module github.com/vanclief/ez
 
 go 1.12
 
