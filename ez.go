@@ -7,13 +7,15 @@ import (
 
 // Application error codes
 const (
-	ECONFLICT      = "conflict"          // action cannot be performed
-	EINTERNAL      = "internal"          // internal error
-	EINVALID       = "invalid"           // validation failed
-	ENOTFOUND      = "not_found"         // entity does not exist
-	ENOTAUTHORIZED = "not_authorized"    // user does not have permissions to perform action
-	ERATELIMIT     = "too_many_requests" // the user has sent too many requests
-	EUNAVAILABLE   = "unavailable"       // not available
+	ECONFLICT          = "conflict"           // action cannot be performed
+	EINTERNAL          = "internal"           // internal error
+	EINVALID           = "invalid"            // validation failed
+	ENOTFOUND          = "not_found"          // entity does not exist
+	ENOTAUTHORIZED     = "not_authorized"     // requester does not have permissions to perform action
+	ENOTAUTHENTICATED  = "not_authenticated"  // requester is not authenticated
+	ERESOURCEEXHAUSTED = "resource_exhausted" // the resource has been exhausted
+	EUNIMPLEMENTED     = "not_implemented"    // the operation has not been implemented
+	EUNAVAILABLE       = "unavailable"        // the system or operation is not available
 )
 
 // Error defines a standar application error
