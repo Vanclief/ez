@@ -14,8 +14,8 @@ const (
 	ENOTAUTHORIZED     = "not_authorized"     // requester does not have permissions to perform action
 	ENOTAUTHENTICATED  = "not_authenticated"  // requester is not authenticated
 	ERESOURCEEXHAUSTED = "resource_exhausted" // the resource has been exhausted
-	EUNIMPLEMENTED     = "not_implemented"    // the operation has not been implemented
-	EUNAVAILABLE       = "unavailable"        // the system or operation is not available
+	ENOTIMPLEMENTED    = "not_implemented"    // the operation has not been implemented
+	ENOTAVAILABLE      = "not_available"      // the system or operation is not available
 )
 
 // Error defines a standar application error
