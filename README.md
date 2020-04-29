@@ -24,11 +24,20 @@ const op = "TestNew"
 err := ez.New(op, ECONFLICT, "An error message", nil)
 ```
 
-Creating nested errors:
+Creating nested errors (used when the err is not an ez.Error):
 ```
 const op = "TestNew"
+err1 := errors.New("emit macho dwarf: elf header corrupted")
+err2 := ez.New(op, ECONFLICT, "Elf header should not be corrupted", err1)
+```
+
+Creating wrapped errors:
+```
+const op = "OriginalOp"
 err1 := ez.New(op, EINTERNAL, "Nested error", nil)
-err2 := ez.New(op, ECONFLICT, "Another error", err1)
+
+const newOp = "NewOp"
+err2 := ez.Wrap(newOp, err1)
 ```
 
 Return the string interpretation of an error:
