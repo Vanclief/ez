@@ -17,6 +17,20 @@ func TestNew(t *testing.T) {
 	assert.Equal(t, err.Err, nil)
 }
 
+func TestWrap(t *testing.T) {
+	const op = "TestNew"
+	wrappedErr := New(op, ECONFLICT, "An error message", nil)
+
+	const newOp = "TestWrap"
+	err := Wrap(newOp, wrappedErr)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, err.Code, "conflict")
+	assert.Equal(t, err.Message, "An error message")
+	assert.Equal(t, err.Op, newOp)
+	assert.Equal(t, err.Err, wrappedErr)
+}
+
 func TestError(t *testing.T) {
 	const op = "TestError"
 	err := New(op, EINTERNAL, "An internal error", nil)

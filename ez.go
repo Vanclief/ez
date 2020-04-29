@@ -35,6 +35,11 @@ func New(op, code, message string, err error) *Error {
 	return &Error{Op: op, Code: code, Message: message, Err: err}
 }
 
+// Wrap returns a new error where only the op changes, useful for creating stacktraces
+func Wrap(op string, err *Error) *Error {
+	return &Error{Op: op, Code: ErrorCode(err), Message: ErrorMessage(err), Err: err}
+}
+
 // Error returns the string representation of the error message.
 func (e *Error) Error() string {
 	var buf bytes.Buffer
