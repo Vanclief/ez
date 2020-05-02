@@ -36,7 +36,7 @@ func New(op, code, message string, err error) *Error {
 }
 
 // Wrap returns a new error where only the op changes, useful for creating stacktraces
-func Wrap(op string, err *Error) *Error {
+func Wrap(op string, err error) *Error {
 	return &Error{Op: op, Code: ErrorCode(err), Message: ErrorMessage(err), Err: err}
 }
 
