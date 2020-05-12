@@ -15,7 +15,7 @@ const (
 	ENOTAUTHENTICATED  = "not_authenticated"  // requester is not authenticated
 	ERESOURCEEXHAUSTED = "resource_exhausted" // the resource has been exhausted
 	ENOTIMPLEMENTED    = "not_implemented"    // the operation has not been implemented
-	ENOTAVAILABLE      = "not_available"      // the system or operation is not available
+	EUNAVAILABLE       = "unavailable"        // the system or operation is not available
 )
 
 // Error defines a standar application error
@@ -35,7 +35,7 @@ func New(op, code, message string, err error) *Error {
 	return &Error{Op: op, Code: code, Message: message, Err: err}
 }
 
-// Wrap returns a new error where only the op changes, useful for creating stacktraces
+// Wrap returns a new error that contains the passed error but with a different operation, useful for creating stacktraces
 func Wrap(op string, err error) *Error {
 	return &Error{Op: op, Code: ErrorCode(err), Message: ErrorMessage(err), Err: err}
 }
