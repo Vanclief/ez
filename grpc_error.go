@@ -9,11 +9,11 @@ import (
 func NewFromGRPC(op string, err error) *Error {
 	status := status.Convert(err)
 	code := status.Code()
-	return New(op, GRPCErrorCode(code), status.Message(), err)
+	return New(op, GRPCCodeToError(code), status.Message(), err)
 }
 
-// GRPCErrorCode converts a GRPC error code to a standar application error code
-func GRPCErrorCode(c codes.Code) string {
+// GRPCCodeToError converts a GRPC error code to a standar application error code
+func GRPCCodeToError(c codes.Code) string {
 	switch c {
 	case codes.FailedPrecondition:
 		return ECONFLICT
@@ -29,6 +29,8 @@ func GRPCErrorCode(c codes.Code) string {
 		return ENOTAUTHENTICATED
 	case codes.ResourceExhausted:
 		return ERESOURCEEXHAUSTED
+	case codes.Unimplemented:
+		return ENOTIMPLEMENTED
 	case codes.Unavailable:
 		return EUNAVAILABLE
 	default:
