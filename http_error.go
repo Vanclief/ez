@@ -15,9 +15,9 @@ func HTTPStatusToError(status int) string {
 		return EINVALID
 	case http.StatusNotFound:
 		return ENOTFOUND
-	case http.StatusUnauthorized:
-		return ENOTAUTHORIZED
 	case http.StatusForbidden:
+		return ENOTAUTHORIZED
+	case http.StatusUnauthorized:
 		return ENOTAUTHENTICATED
 	case http.StatusTooManyRequests:
 		return ERESOURCEEXHAUSTED
@@ -43,9 +43,9 @@ func ErrorToHTTPStatus(err error) int {
 	case ENOTFOUND:
 		return http.StatusNotFound
 	case ENOTAUTHORIZED:
-		return http.StatusUnauthorized
-	case ENOTAUTHENTICATED:
 		return http.StatusForbidden
+	case ENOTAUTHENTICATED:
+		return http.StatusUnauthorized
 	case ERESOURCEEXHAUSTED:
 		return http.StatusTooManyRequests
 	case ENOTIMPLEMENTED:
