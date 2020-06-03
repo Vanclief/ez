@@ -62,6 +62,11 @@ func (e *Error) Error() string {
 	return buf.String()
 }
 
+// String returns a simplified string representation of the error message
+func (e *Error) String() string {
+	return fmt.Sprintf(`%s <%s> "%s"`, e.Op, e.Code, e.Message)
+}
+
 // ErrorCode returns the code of the root error, if available.
 // Otherwise returns EINTERNAL.
 func ErrorCode(err error) string {
@@ -86,4 +91,16 @@ func ErrorMessage(err error) string {
 		return ErrorMessage(e.Err)
 	}
 	return "An internal error has occurred. Please contact technical support."
+}
+
+// ErrorStacktrace prints a human-redable stacktrace of all nested errors.
+func ErrorStacktrace(err error) {
+	if err == nil {
+		return
+	} else if e, ok := err.(*Error); ok {
+		fmt.Println(e.String())
+		ErrorStacktrace(e.Err)
+	} else if ok && e.Err != nil {
+		fmt.Println(e.String())
+	}
 }

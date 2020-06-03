@@ -60,3 +60,11 @@ func TestErrorMessage(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, msg, "A not found error")
 }
+
+func TestErrorStacktrace(t *testing.T) {
+	err1 := New("Op 1", EINTERNAL, "Original error", nil)
+	err2 := New("Op 2", EINVALID, "Not so original error", err1)
+	err3 := Wrap("Op 3", err2)
+
+	ErrorStacktrace(err3)
+}
