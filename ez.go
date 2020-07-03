@@ -21,13 +21,13 @@ const (
 // Error defines a standar application error
 type Error struct {
 	// Machine readable code
-	Code string
+	Code string `json:"code"`
 	// Human readable message
-	Message string
+	Message string `json:"message"`
 	// Logical operation
-	Op string
+	Op string `json:"op"`
 	// Nested error
-	Err error
+	Err error `json:"err"`
 }
 
 // New creates and returns a new error
