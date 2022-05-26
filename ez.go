@@ -102,5 +102,7 @@ func ErrorStacktrace(err error) {
 		ErrorStacktrace(e.Err)
 	} else if ok && e.Err != nil {
 		fmt.Println(e.String())
+	} else {
+		fmt.Println(err.Error())
 	}
 }

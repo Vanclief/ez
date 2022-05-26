@@ -1,6 +1,7 @@
 package ez
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,9 +63,10 @@ func TestErrorMessage(t *testing.T) {
 }
 
 func TestErrorStacktrace(t *testing.T) {
-	err1 := New("Op 1", EINTERNAL, "Original error", nil)
-	err2 := New("Op 2", EINVALID, "Not so original error", err1)
-	err3 := Wrap("Op 3", err2)
+	err0 := errors.New("A plain error message")
+	err1 := New("Depth 1", EINTERNAL, "", err0)
+	err2 := New("Depth 2", EINVALID, "Not so original error", err1)
+	err3 := Wrap("Depth 3", err2)
 
 	ErrorStacktrace(err3)
 }
