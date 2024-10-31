@@ -93,7 +93,39 @@ func (s *UserService) CreateUser(ctx context.Context, user *User) error {
 }
 ```
 
-### 3. Error Information Extraction
+### 3. Error Data
+
+Attach additional contextual data to errors:
+
+```go
+
+Copy// Add single data field
+err := ez.NewRoot(op, ez.EINVALID, "Invalid user data").
+    AddData("user_id", "123")
+
+// Add multiple data fields at once
+err := ez.NewRoot(op, ez.ECONFLICT, "User already exists").
+    AddDataMap(map[string]interface{}{
+        "username": user.Username,
+        "email":    user.Email,
+    })
+
+// Access error data
+data := ez.ErrorData(err) // Returns map[string]interface{}
+userID := data["user_id"].(string)
+```
+
+Data is preserved when wrapping errors:
+
+```go
+err := ez.NewRoot(op, ez.ENOTFOUND, "User not found").
+    AddData("user_id", "123")
+
+wrappedErr := ez.Wrap("UserService.GetUser", err)
+data := ez.ErrorData(wrappedErr) // Still contains "user_id"
+```
+
+### 4. Error Information Extraction
 
 Easy access to error details:
 
@@ -129,7 +161,7 @@ func (s *UserService) CreateUser(ctx context.Context, user *User) error {
     }
     if exists {
         return ez.New(op, ez.ECONFLICT,
-            "Username is already taken. Please choose another one.", nil)
+            "Username is already taken. Please choose another one.", nil).AddData("username", user.Username)
     }
 
     // Database error (developer focused)
@@ -160,13 +192,16 @@ case ez.EINTERNAL:
 // End user message
 if err != nil {
     fmt.Println("Error:", ez.ErrorMessage(err))
-    // Output: "Error: Username is required"
+    // Output: "Error: Username is already taken"
+    if username, ok := data["username"].(string); ok {
+        // Return specific username error
+    }
 }
 
 // Developer debugging
 if err != nil {
     ez.ErrorStacktrace(err)
-    // Output: "UserService.CreateUser: <invalid> Username is required"
+    // Output: "UserService.CreateUser: <invalid> Username is already taken"
 }
 ```
 

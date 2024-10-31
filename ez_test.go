@@ -70,3 +70,30 @@ func TestErrorStacktrace(t *testing.T) {
 
 	ErrorStacktrace(err3)
 }
+
+func TestAddDataToNilData(t *testing.T) {
+	err := New("TestOp", ECONFLICT, "message", nil)
+	err.AddData("key1", "value1")
+
+	expected := map[string]interface{}{"key1": "value1"}
+	assert.Equal(t, expected, err.Data)
+}
+
+func TestAddDataToExistingData(t *testing.T) {
+	err := &Error{Data: map[string]interface{}{"existing": "data"}}
+	err.AddData("key2", 42)
+
+	expected := map[string]interface{}{
+		"existing": "data",
+		"key2":     42,
+	}
+	assert.Equal(t, expected, err.Data)
+}
+
+func TestAddDataOverrideExisting(t *testing.T) {
+	err := &Error{Data: map[string]interface{}{"key": "old"}}
+	err.AddData("key", "new")
+
+	expected := map[string]interface{}{"key": "new"}
+	assert.Equal(t, expected, err.Data)
+}
