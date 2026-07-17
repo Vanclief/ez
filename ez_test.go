@@ -96,7 +96,13 @@ func TestErrorStacktrace(t *testing.T) {
 	err2 := New(EINVALID, "Not so original error", err1)
 	err3 := Wrap(err2)
 
-	ErrorStacktrace(err3)
+	expected := `ez.TestErrorStacktrace <invalid> "Not so original error"
+ez.TestErrorStacktrace <invalid> "Not so original error"
+ez.TestErrorStacktrace <internal> ""
+A plain error message`
+
+	assert.Equal(t, expected, ErrorStacktrace(err3))
+	assert.Equal(t, "", ErrorStacktrace(nil))
 }
 
 func TestOpFromFuncName(t *testing.T) {

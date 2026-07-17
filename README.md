@@ -46,6 +46,13 @@ e := ez.NewFromGRPC(err)
 e.Op = method
 ```
 
+`ez.ErrorStacktrace` now returns the stacktrace as a string instead of
+printing it to stdout, so it can be routed to your logger:
+
+```go
+slog.Error("create user failed", "stacktrace", ez.ErrorStacktrace(err))
+```
+
 ## Quick Start
 
 ```go
@@ -69,8 +76,8 @@ if ez.ErrorCode(err) == ez.EINVALID {
 // Get user-friendly message
 message := ez.ErrorMessage(err) // "Username cannot be empty"
 
-// Print the full error trace for developers
-ez.ErrorStacktrace(err) // Prints: users.Service.CreateUser <invalid> "Username cannot be empty"
+// Get the full error trace for developers
+trace := ez.ErrorStacktrace(err) // users.Service.CreateUser <invalid> "Username cannot be empty"
 ```
 
 ## Core Features
@@ -158,8 +165,8 @@ code := ez.ErrorCode(err)    // e.g., "invalid"
 // Get user message
 msg := ez.ErrorMessage(err)  // e.g., "Username is required"
 
-// Print the full error trace (for developers)
-ez.ErrorStacktrace(err)      // Prints: users.UserService.CreateUser <invalid> "Username is required"
+// Get the full error trace (for developers)
+trace := ez.ErrorStacktrace(err) // users.UserService.CreateUser <invalid> "Username is required"
 ```
 
 ## Example
@@ -221,8 +228,8 @@ if err != nil {
 
 // Developer debugging
 if err != nil {
-    ez.ErrorStacktrace(err)
-    // Prints: users.UserService.CreateUser <invalid> "Username is required"
+    fmt.Println(ez.ErrorStacktrace(err))
+    // Output: users.UserService.CreateUser <invalid> "Username is required"
 }
 ```
 

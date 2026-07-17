@@ -1,17 +1,16 @@
 package ez
 
-import "fmt"
-
-// ErrorStacktrace prints a human-redable stacktrace of all nested errors.
-func ErrorStacktrace(err error) {
+// ErrorStacktrace returns a human-readable stacktrace of all nested errors,
+// one per line.
+func ErrorStacktrace(err error) string {
 	if err == nil {
-		return
-	} else if e, ok := err.(*Error); ok {
-		fmt.Println(e.String())
-		ErrorStacktrace(e.Err)
-	} else if ok && e.Err != nil {
-		fmt.Println(e.String())
-	} else {
-		fmt.Println(err.Error())
+		return ""
 	}
+	if e, ok := err.(*Error); ok {
+		if nested := ErrorStacktrace(e.Err); nested != "" {
+			return e.String() + "\n" + nested
+		}
+		return e.String()
+	}
+	return err.Error()
 }
