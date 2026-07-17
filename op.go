@@ -25,5 +25,7 @@ func opFromFuncName(name string) string {
 	}
 	name = strings.ReplaceAll(name, "(*", "")
 	name = strings.ReplaceAll(name, ")", "")
+	// The runtime elides generic type arguments to a literal "[...]".
+	name = strings.ReplaceAll(name, "[...]", "")
 	return name
 }

@@ -104,8 +104,10 @@ func TestOpFromFuncName(t *testing.T) {
 		"github.com/vanclief/project/pkg.(*API).Create": "pkg.API.Create",
 		"github.com/vanclief/project/pkg.API.Create":    "pkg.API.Create",
 		"github.com/vanclief/project/pkg.monthBounds":   "pkg.monthBounds",
-		"main.main":                "main.main",
-		"pkg.(*API).Create.func1":  "pkg.API.Create.func1",
+		"main.main":                   "main.main",
+		"pkg.(*API).Create.func1":     "pkg.API.Create.func1",
+		"pkg.Load[...]":               "pkg.Load",
+		"pkg.(*Repository[...]).Find": "pkg.Repository.Find",
 	}
 
 	for input, expected := range cases {

@@ -26,6 +26,26 @@ Go's error handling can be challenging - while errors are core to the language, 
 go get github.com/vanclief/ez
 ```
 
+### Upgrading from v1.4 and earlier
+
+Since v1.5.0 the constructors no longer take an operation argument — it is
+derived automatically from the calling function. Drop the first argument at
+every call site:
+
+```go
+ez.New(op, ez.EINVALID, "Username is required", nil)  // before
+ez.New(ez.EINVALID, "Username is required", nil)      // after
+```
+
+The same applies to `ez.Root` and `ez.Wrap`. If you need a custom operation
+name (for example in a gRPC interceptor, where the method name is better than
+any function name), set the exported field directly:
+
+```go
+e := ez.NewFromGRPC(err)
+e.Op = method
+```
+
 ## Quick Start
 
 ```go
@@ -49,8 +69,8 @@ if ez.ErrorCode(err) == ez.EINVALID {
 // Get user-friendly message
 message := ez.ErrorMessage(err) // "Username cannot be empty"
 
-// Get full error trace for developers
-ez.ErrorStacktrace(err) // "users.Service.CreateUser: <invalid> Username cannot be empty"
+// Print the full error trace for developers
+ez.ErrorStacktrace(err) // Prints: users.Service.CreateUser <invalid> "Username cannot be empty"
 ```
 
 ## Core Features
@@ -61,12 +81,12 @@ Pre-defined error codes that cover most common scenarios:
 
 ```go
 const (
-    ECONFLICT   = "conflict"           // Action cannot be performed
-    EINTERNAL   = "internal"           // Internal error
-    EINVALID    = "invalid"            // Validation failed
-    ENOTFOUND   = "not_found"          // Entity does not exist
-    ENOTAUTHORIZED    = "not_authorized"     // Missing permissions
-    ENOTAUTHENTICATED = "not_authenticated"  // Not authenticated
+    ECONFLICT          = "conflict"           // Action cannot be performed
+    EINTERNAL          = "internal"           // Internal error
+    EINVALID           = "invalid"            // Validation failed
+    ENOTFOUND          = "not_found"          // Entity does not exist
+    ENOTAUTHORIZED     = "not_authorized"     // Missing permissions
+    ENOTAUTHENTICATED  = "not_authenticated"  // Not authenticated
     ERESOURCEEXHAUSTED = "resource_exhausted" // Resource exhausted
     ENOTIMPLEMENTED    = "not_implemented"    // Not implemented
     EUNAVAILABLE       = "unavailable"        // System unavailable
@@ -138,9 +158,8 @@ code := ez.ErrorCode(err)    // e.g., "invalid"
 // Get user message
 msg := ez.ErrorMessage(err)  // e.g., "Username is required"
 
-// Get full error trace (for developers)
-ez.ErrorStacktrace(err)         // e.g., "users.UserService.CreateUser: <invalid> Username is required"
-
+// Print the full error trace (for developers)
+ez.ErrorStacktrace(err)      // Prints: users.UserService.CreateUser <invalid> "Username is required"
 ```
 
 ## Example
@@ -192,7 +211,9 @@ case ez.EINTERNAL:
 // End user message
 if err != nil {
     fmt.Println("Error:", ez.ErrorMessage(err))
-    // Output: "Error: Username is already taken"
+    // Output: "Error: Username is required"
+
+    data := ez.ErrorData(err)
     if username, ok := data["username"].(string); ok {
         // Return specific username error
     }
@@ -201,7 +222,7 @@ if err != nil {
 // Developer debugging
 if err != nil {
     ez.ErrorStacktrace(err)
-    // Output: "users.UserService.CreateUser: <invalid> Username is already taken"
+    // Prints: users.UserService.CreateUser <invalid> "Username is required"
 }
 ```
 
