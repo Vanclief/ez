@@ -19,18 +19,22 @@ type Error struct {
 	Data map[string]interface{} `json:"data,omitempty"`
 }
 
-// New creates and returns a new error
-func New(op, code, message string, err error) *Error {
-	return &Error{Op: op, Code: code, Message: message, Err: err}
+// New creates and returns a new error. The operation is derived from the
+// calling function: "pkg.Type.Method" or "pkg.Function".
+func New(code, message string, err error) *Error {
+	return &Error{Op: callerOp(), Code: code, Message: message, Err: err}
 }
 
-// Root creates a new root error
-func Root(op, code, message string) *Error {
-	return New(op, code, message, nil)
+// Root creates a new root error. The operation is derived from the
+// calling function.
+func Root(code, message string) *Error {
+	return &Error{Op: callerOp(), Code: code, Message: message}
 }
 
-// Wrap returns a new error that contains the passed error but with a different operation, useful for creating stacktraces
-func Wrap(op string, err error) *Error {
+// Wrap returns a new error that contains the passed error, useful for
+// creating stacktraces. The operation is derived from the calling function.
+func Wrap(err error) *Error {
+	op := callerOp()
 	if e, ok := err.(*Error); ok {
 		return &Error{
 			Op:      op,

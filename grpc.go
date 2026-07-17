@@ -5,11 +5,12 @@ import (
 	status "google.golang.org/grpc/status"
 )
 
-// NewFromGRPC wraps a GRPC Error into a standar application error
-func NewFromGRPC(op string, err error) *Error {
+// NewFromGRPC wraps a GRPC Error into a standar application error.
+// The operation is derived from the calling function.
+func NewFromGRPC(err error) *Error {
 	status := status.Convert(err)
 	code := status.Code()
-	return New(op, GRPCCodeToError(code), status.Message(), err)
+	return &Error{Op: callerOp(), Code: GRPCCodeToError(code), Message: status.Message(), Err: err}
 }
 
 // GRPCCodeToError converts a GRPC error code to a standar application error code

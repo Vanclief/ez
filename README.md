@@ -33,11 +33,13 @@ import "github.com/vanclief/ez"
 
 // Create a new error
 err := ez.New(
-    "UserService.CreateUser",  // Operation name
-    ez.EINVALID,              // Error code
+    ez.EINVALID,                // Error code
     "Username cannot be empty", // User-friendly message
-    nil,                      // Optional underlying error
+    nil,                        // Optional underlying error
 )
+
+// The operation name is derived automatically from the calling function,
+// e.g. "users.Service.CreateUser" — no need to declare it.
 
 // Check error codes
 if ez.ErrorCode(err) == ez.EINVALID {
@@ -48,7 +50,7 @@ if ez.ErrorCode(err) == ez.EINVALID {
 message := ez.ErrorMessage(err) // "Username cannot be empty"
 
 // Get full error trace for developers
-ez.ErrorStackTrace(err) // "UserService.CreateUser: <invalid> Username cannot be empty"
+ez.ErrorStacktrace(err) // "users.Service.CreateUser: <invalid> Username cannot be empty"
 ```
 
 ## Core Features
@@ -73,20 +75,21 @@ const (
 
 ### 2. Error Wrapping
 
-Build logical stack traces by wrapping errors:
+Build logical stack traces by wrapping errors. Every constructor derives the
+operation name from the function that calls it ("pkg.Type.Method" for methods,
+"pkg.Function" for functions), so there is nothing to declare or keep in sync:
 
 ```go
 func (s *UserService) CreateUser(ctx context.Context, user *User) error {
-    const op = "UserService.CreateUser"
-
     // Validate user
     if user.Username == "" {
-        return ez.New(op, ez.EINVALID, "Username is required", nil)
+        return ez.New(ez.EINVALID, "Username is required", nil)
+        // Op: "users.UserService.CreateUser"
     }
 
     // Try to create user
     if err := s.db.CreateUser(user); err != nil {
-        return ez.Wrap(op, err) // Preserves original error details
+        return ez.Wrap(err) // Preserves original error details
     }
 
     return nil
@@ -98,13 +101,12 @@ func (s *UserService) CreateUser(ctx context.Context, user *User) error {
 Attach additional contextual data to errors:
 
 ```go
-
-Copy// Add single data field
-err := ez.NewRoot(op, ez.EINVALID, "Invalid user data").
+// Add single data field
+err := ez.Root(ez.EINVALID, "Invalid user data").
     AddData("user_id", "123")
 
 // Add multiple data fields at once
-err := ez.NewRoot(op, ez.ECONFLICT, "User already exists").
+err := ez.Root(ez.ECONFLICT, "User already exists").
     AddDataMap(map[string]interface{}{
         "username": user.Username,
         "email":    user.Email,
@@ -118,10 +120,10 @@ userID := data["user_id"].(string)
 Data is preserved when wrapping errors:
 
 ```go
-err := ez.NewRoot(op, ez.ENOTFOUND, "User not found").
+err := ez.Root(ez.ENOTFOUND, "User not found").
     AddData("user_id", "123")
 
-wrappedErr := ez.Wrap("UserService.GetUser", err)
+wrappedErr := ez.Wrap(err)
 data := ez.ErrorData(wrappedErr) // Still contains "user_id"
 ```
 
@@ -137,7 +139,7 @@ code := ez.ErrorCode(err)    // e.g., "invalid"
 msg := ez.ErrorMessage(err)  // e.g., "Username is required"
 
 // Get full error trace (for developers)
-ez.ErrorStacktrace(err)         // e.g., "UserService.CreateUser: <invalid> Username is required"
+ez.ErrorStacktrace(err)         // e.g., "users.UserService.CreateUser: <invalid> Username is required"
 
 ```
 
@@ -147,26 +149,24 @@ Here's an example showing how to handle errors with `ez`:
 
 ```go
 func (s *UserService) CreateUser(ctx context.Context, user *User) error {
-    const op = "UserService.CreateUser"
-
     // Validation error (end user focused)
     if user.Username == "" {
-        return ez.New(op, ez.EINVALID, "Username is required", nil)
+        return ez.New(ez.EINVALID, "Username is required", nil)
     }
 
     // Check for conflicts (application logic focused)
     exists, err := s.checkUserExists(user.Username)
     if err != nil {
-        return ez.Wrap(op, err) // Wraps internal error for developers
+        return ez.Wrap(err) // Wraps internal error for developers
     }
     if exists {
-        return ez.New(op, ez.ECONFLICT,
+        return ez.New(ez.ECONFLICT,
             "Username is already taken. Please choose another one.", nil).AddData("username", user.Username)
     }
 
     // Database error (developer focused)
     if err := s.db.CreateUser(user); err != nil {
-        return ez.Wrap(op, err)
+        return ez.Wrap(err)
     }
 
     return nil
@@ -201,7 +201,7 @@ if err != nil {
 // Developer debugging
 if err != nil {
     ez.ErrorStacktrace(err)
-    // Output: "UserService.CreateUser: <invalid> Username is already taken"
+    // Output: "users.UserService.CreateUser: <invalid> Username is already taken"
 }
 ```
 
