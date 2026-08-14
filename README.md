@@ -26,32 +26,7 @@ Go's error handling can be challenging - while errors are core to the language, 
 go get github.com/vanclief/ez
 ```
 
-### Upgrading from v1.4 and earlier
-
-Since v1.5.0 the constructors no longer take an operation argument — it is
-derived automatically from the calling function. Drop the first argument at
-every call site:
-
-```go
-ez.New(op, ez.EINVALID, "Username is required", nil)  // before
-ez.New(ez.EINVALID, "Username is required", nil)      // after
-```
-
-The same applies to `ez.Root` and `ez.Wrap`. If you need a custom operation
-name (for example in a gRPC interceptor, where the method name is better than
-any function name), set the exported field directly:
-
-```go
-e := ez.NewFromGRPC(err)
-e.Op = method
-```
-
-`ez.ErrorStacktrace` now returns the stacktrace as a string instead of
-printing it to stdout, so it can be routed to your logger:
-
-```go
-slog.Error("create user failed", "stacktrace", ez.ErrorStacktrace(err))
-```
+Upgrade guides live in the [docs](docs/) folder.
 
 ## Quick Start
 
@@ -88,23 +63,55 @@ Pre-defined error codes that cover most common scenarios:
 
 ```go
 const (
-    ECONFLICT          = "conflict"           // Action cannot be performed
-    EINTERNAL          = "internal"           // Internal error
+    ECONFLICT          = "conflict"           // Request is valid but the current state of the data forbids it
+    EINTERNAL          = "internal"           // Unexpected internal failure where retry is not implied
     EINVALID           = "invalid"            // Validation failed
     ENOTFOUND          = "not_found"          // Entity does not exist
     ENOTAUTHORIZED     = "not_authorized"     // Missing permissions
     ENOTAUTHENTICATED  = "not_authenticated"  // Not authenticated
-    ERESOURCEEXHAUSTED = "resource_exhausted" // Resource exhausted
+    ERESOURCEEXHAUSTED = "resource_exhausted" // Rate limit / quota exhausted
     ENOTIMPLEMENTED    = "not_implemented"    // Not implemented
-    EUNAVAILABLE       = "unavailable"        // System unavailable
+    EUNAVAILABLE       = "unavailable"        // The operation is unavailable and retry may help
+    ETIMEOUT           = "timeout"            // The operation ran out of time
+    ECANCELED          = "canceled"           // The caller gave up before the operation finished
 )
 ```
+
+`ErrorCode` detects timeouts and cancellations in wrapped non-ez errors —
+the `context.Canceled`, `context.DeadlineExceeded` and
+`os.ErrDeadlineExceeded` sentinels anywhere in the chain, plus a `Timeout()
+bool` check on the top-level error only — so `ez.Wrap(err)` on a failed
+HTTP call yields `ETIMEOUT` instead of misreporting `EINTERNAL`.
+
+#### HTTP and gRPC mappings
+
+`ErrorToHTTPStatus` / `ErrorToGRPCCode` convert ez codes for outbound
+responses; `HTTPStatusToError` / `NewFromGRPC` classify inbound responses.
+Mappings preserve recovery semantics rather than encoding who caused the
+failure. HTTP 502/503 and gRPC `Unavailable` map to `EUNAVAILABLE`; HTTP 500,
+other unmapped 5xx statuses and gRPC `Internal` map to `EINTERNAL`. HTTP
+501 maps to `ENOTIMPLEMENTED`, 504/408 to `ETIMEOUT`, 410 to `ENOTFOUND`,
+412 to `ECONFLICT`, 499 to `ECANCELED`, and unmapped 4xx statuses to
+`EINVALID`. The two directions are deliberately not exact inverses because
+several transport statuses can share one application classification.
+
+`NewFromGRPC` gives an explicit gRPC status precedence over context sentinels
+elsewhere in the error chain. It never copies an upstream status description
+into the end-user-facing `Message`; the original diagnostic remains available
+through the nested error and `ErrorMessage` returns a safe fallback. Callers
+must explicitly provide any trusted, sanitized end-user message.
 
 ### 2. Error Wrapping
 
 Build logical stack traces by wrapping errors. Every constructor derives the
 operation name from the function that calls it ("pkg.Type.Method" for methods,
-"pkg.Function" for functions), so there is nothing to declare or keep in sync:
+"pkg.Function" for functions), so there is nothing to declare or keep in sync.
+`*Error` implements `Unwrap`, so `errors.Is` and `errors.As` traverse through
+ez errors into their nested causes.
+
+`ErrorCode`, `ErrorMessage` and `ErrorData` read direct ez chains only; they do
+not recover ez metadata hidden behind a non-ez wrapper. Use `ez.Wrap` instead
+of `fmt.Errorf("...: %w", err)` when propagating an ez error.
 
 ```go
 func (s *UserService) CreateUser(ctx context.Context, user *User) error {

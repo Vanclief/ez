@@ -20,7 +20,8 @@ func callerOp() string {
 // opFromFuncName trims a fully qualified function name like
 // "github.com/user/project/pkg.(*Type).Method" down to "pkg.Type.Method".
 func opFromFuncName(name string) string {
-	if i := strings.LastIndexByte(name, '/'); i >= 0 {
+	i := strings.LastIndexByte(name, '/')
+	if i >= 0 {
 		name = name[i+1:]
 	}
 	name = strings.ReplaceAll(name, "(*", "")
