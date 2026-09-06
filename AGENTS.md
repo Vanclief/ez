@@ -1,33 +1,13 @@
-# AGENTS.md
+<!-- BEGIN golang: generated from Vanclief/skills golang/SKILL.md, do not edit here -->
+## Go conventions
 
-## Go style rules (strict)
+Apply these Go conventions when writing code and report violations in reviews, even when review guidance says to skip routine lint or formatting nits.
 
-### No explicit semicolons outside `for`
+Write one statement per line. Never use an explicit `;` in Go syntax except the two separators in a three-clause `for init; condition; post` header. Semicolons inside SQL strings are allowed. Put header initializers on the preceding line: write `err := f()` then `if err != nil {`, never `if err := f(); err != nil {`.
 
-- Never write an explicit semicolon `;` in Go code.
-- Exception (only): semicolons are allowed _only_ inside a 3-clause `for` header:
-  `for init; condition; post { ... }`
-- All other explicit-semicolon forms are forbidden, including:
-  - multiple statements on one line: `a(); b()`
-  - `if init; condition { ... }` (e.g. `if err := f(); err != nil { ... }`)
-  - `switch init; { ... }` and type-switch init forms
+Use `err` for error variables. Do not invent per-call names such as `parseErr` when immediately checking and returning the error. Keep assignment and error check adjacent. Narrow `err` shadowing is acceptable when checked and returned immediately; flag shadowing only when it can hide a bug.
 
-### Required rewrite style
+Where the module already uses `github.com/vanclief/ez`, create errors at the origin with `ez.New(code, message, cause)` and propagate them with `ez.Wrap(err)`. Classify ez errors with `ez.ErrorCode(err)`, not by matching error messages.
 
-- One statement per line.
-- If you need a header initializer that would require a semicolon (`if init; cond` or `switch init; expr` / `switch init; {}`), move it to its own line above the statement.
-
-### Error handling (idiomatic)
-
-- Use `err` as the error variable name.
-- Do not create per-call error names (`parseErr`, `insertErr`, `keyErr`, etc.) when the error is immediately checked and returned.
-- Keep assignment and error check adjacent (no unrelated code between them).
-- `err` shadowing in a narrow inner scope is acceptable when the error is immediately checked and returned.
-
-## Review guidelines
-
-- Flag any explicit semicolon `;` usage in Go outside `for init; condition; post { ... }` as an issue unless its part of a SQL query.
-- Flag any `if init; cond {}` / `switch init; {}` / `switch init; expr {}` usage as an issue (requires rewrite to multi-line).
-- Flag per-call error renaming (`parseErr`, `insertErr`, `keyErr`, etc.) when `err` is sufficient.
-- Do not flag `err` shadowing by default.
-- Flag `err` shadowing only when it can change behavior or hide bugs (for example, when the outer `err` is relied on later in the same function or when assignment and check are not adjacent).
+Before finishing Go changes, scan the code you wrote for forbidden semicolons in Go syntax and rewrite it to comply.
+<!-- END golang -->
