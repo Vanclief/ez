@@ -109,9 +109,13 @@ operation name from the function that calls it ("pkg.Type.Method" for methods,
 `*Error` implements `Unwrap`, so `errors.Is` and `errors.As` traverse through
 ez errors into their nested causes.
 
-`ErrorCode`, `ErrorMessage` and `ErrorData` read direct ez chains only; they do
-not recover ez metadata hidden behind a non-ez wrapper. Use `ez.Wrap` instead
-of `fmt.Errorf("...: %w", err)` when propagating an ez error.
+`ErrorCode`, `ErrorMessage` and `ErrorData` read the nearest ez error in the
+chain. They follow single-cause wrappers, so an ez error wrapped with
+`fmt.Errorf("...: %w", err)` keeps its code, message and data. They stop at an
+error with several causes (`errors.Join`, or `fmt.Errorf` with more than one
+`%w`), which is classified as `EINTERNAL` unless it is a timeout or
+cancellation. Still prefer `ez.Wrap` when propagating an error: it records the
+operation as a structured line in the stack trace, which `fmt.Errorf` does not.
 
 ```go
 func (s *UserService) CreateUser(ctx context.Context, user *User) error {

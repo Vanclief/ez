@@ -20,11 +20,12 @@ func ErrorMessage(err error) string {
 	return "An internal error has occurred. Please contact technical support."
 }
 
-// errorMessage returns the first non-empty message in a direct ez error chain,
-// or "".
+// errorMessage returns the first non-empty message set on an ez error in the
+// chain, following single-cause wrappers, or "". The text of a wrapper that
+// is not an ez error is never returned: only ez messages are end-user facing.
 func errorMessage(err error) string {
-	e, ok := err.(*Error)
-	if ok && e != nil {
+	e := nearest(err)
+	if e != nil {
 		if e.Message != "" {
 			return e.Message
 		}
