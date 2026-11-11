@@ -75,19 +75,23 @@ func (e *Error) AddDataMap(data map[string]interface{}) *Error {
 	return e
 }
 
-// ErrorData returns the data from a direct ez error chain, if available.
+// ErrorData returns the data of every error in a direct ez error chain merged
+// into a new map, with outer keys winning on conflict, or nil when no error in
+// the chain has data. The errors' own maps are never modified.
 func ErrorData(err error) map[string]interface{} {
-	if err == nil {
+	e, ok := err.(*Error)
+	if !ok || e == nil {
 		return nil
 	}
-	e, ok := err.(*Error)
-	if ok && e != nil {
-		if e.Data != nil {
-			return e.Data
-		}
-		if e.Err != nil {
-			return ErrorData(e.Err)
-		}
+	data := ErrorData(e.Err)
+	if e.Data == nil {
+		return data
 	}
-	return nil
+	if data == nil {
+		data = make(map[string]interface{}, len(e.Data))
+	}
+	for k, v := range e.Data {
+		data[k] = v
+	}
+	return data
 }

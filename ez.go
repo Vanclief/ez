@@ -35,6 +35,13 @@ func Root(code, message string) *Error {
 // creating stacktraces. The operation is derived from the calling function.
 func Wrap(err error) *Error {
 	op := callerOp()
+	if err == nil {
+		// Wrapping a nil error is a caller bug. Returning a typed nil
+		// would poison error interfaces, so fail loudly instead. The
+		// diagnostic goes in Data — Message is end-user facing.
+		e := &Error{Op: op, Code: EINTERNAL}
+		return e.AddData("reason", "Wrap called with nil error")
+	}
 	e, ok := err.(*Error)
 	if ok && e != nil {
 		// Shallow-copy the data map so AddData on the wrapper doesn't

@@ -494,3 +494,42 @@ func TestNewFromGRPCWrappedStatusDoesNotExposeMessages(t *testing.T) {
 	assert.Equal(t, genericMessage, ErrorMessage(err))
 	assert.Equal(t, wrapped, err.Err)
 }
+
+func TestWrapNil(t *testing.T) {
+	err := Wrap(nil)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, EINTERNAL, err.Code)
+	assert.Empty(t, err.Message)
+	assert.Equal(t, "ez.TestWrapNil", err.Op)
+	assert.Nil(t, err.Err)
+	assert.Equal(t, "Wrap called with nil error", err.Data["reason"])
+	assert.Equal(t, "ez.TestWrapNil: <internal> ", err.Error())
+	assert.Equal(t, "An internal error has occurred. Please contact technical support.", ErrorMessage(err))
+}
+
+func TestErrorDataMergesDirectChain(t *testing.T) {
+	inner := Root(ENOTFOUND, "User not found").AddData("user_id", "123").AddData("scope", "inner")
+
+	// Data from a cause passed to New is no longer hidden by the outer data,
+	// and the outer key wins on conflict
+	outer := New(EINTERNAL, "Lookup failed", inner).AddData("tenant", "a").AddData("scope", "outer")
+	expected := map[string]interface{}{"user_id": "123", "tenant": "a", "scope": "outer"}
+	assert.Equal(t, expected, ErrorData(outer))
+
+	// No error's own map is mutated
+	assert.Equal(t, map[string]interface{}{"user_id": "123", "scope": "inner"}, inner.Data)
+	assert.Equal(t, map[string]interface{}{"tenant": "a", "scope": "outer"}, outer.Data)
+
+	// Wrap chains report the same merged view
+	wrapped := Wrap(inner).AddData("tenant", "a")
+	expected = map[string]interface{}{"user_id": "123", "tenant": "a", "scope": "inner"}
+	assert.Equal(t, expected, ErrorData(wrapped))
+
+	// nil when no error in the chain has data
+	assert.Nil(t, ErrorData(New(EINTERNAL, "Lookup failed", Root(ENOTFOUND, "User not found"))))
+
+	// A non-ez wrapper still ends the chain
+	hidden := New(EINTERNAL, "Lookup failed", fmt.Errorf("lookup: %w", inner)).AddData("tenant", "a")
+	assert.Equal(t, map[string]interface{}{"tenant": "a"}, ErrorData(hidden))
+}
