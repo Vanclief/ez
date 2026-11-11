@@ -186,16 +186,21 @@ func TestMixedStdlibAndEzChains(t *testing.T) {
 	inner := Root(ENOTFOUND, "User not found").AddData("user_id", "123")
 	wrapped := fmt.Errorf("lookup: %w", inner)
 
-	// ez metadata hidden behind a foreign wrapper is not searched for.
-	assert.Equal(t, EINTERNAL, ErrorCode(wrapped))
-	assert.Equal(t, "An internal error has occurred. Please contact technical support.", ErrorMessage(wrapped))
-	assert.Nil(t, ErrorData(wrapped))
+	// ez metadata behind a single-cause foreign wrapper is found.
+	assert.Equal(t, ENOTFOUND, ErrorCode(wrapped))
+	assert.Equal(t, "User not found", ErrorMessage(wrapped))
+	assert.Equal(t, map[string]interface{}{"user_id": "123"}, ErrorData(wrapped))
+
+	// An error with several causes has no single ez classification.
 	assert.Equal(t, EINTERNAL, ErrorCode(errors.Join(inner, errors.New("other"))))
 
+	// Wrap picks up the code and message found behind the foreign wrapper.
+	// Data is not copied into the wrapper, but is still read through it.
 	wrappedForeign := Wrap(wrapped)
-	assert.Equal(t, EINTERNAL, wrappedForeign.Code)
-	assert.Equal(t, "", wrappedForeign.Message)
+	assert.Equal(t, ENOTFOUND, wrappedForeign.Code)
+	assert.Equal(t, "User not found", wrappedForeign.Message)
 	assert.Nil(t, wrappedForeign.Data)
+	assert.Equal(t, map[string]interface{}{"user_id": "123"}, ErrorData(wrappedForeign))
 
 	// Wrap preserves code, message and data in direct ez chains.
 	rewrapped := Wrap(inner)
@@ -243,6 +248,43 @@ mid: ez.TestMixedStdlibAndEzChains: <not_found> User not found`
 	// Unwrap lets errors.Is see through ez layers
 	sentinel := errors.New("sentinel")
 	assert.True(t, errors.Is(New(EINTERNAL, "wrapped", sentinel), sentinel))
+}
+
+func TestClassificationThroughForeignWrappers(t *testing.T) {
+	notFound := New(ENOTFOUND, "User not found", nil)
+
+	// Several foreign layers, and the transport mappings that read the code
+	deep := fmt.Errorf("handler: %w", fmt.Errorf("service: %w", notFound))
+	assert.Equal(t, ENOTFOUND, ErrorCode(deep))
+	assert.Equal(t, "User not found", ErrorMessage(deep))
+	assert.Equal(t, http.StatusNotFound, ErrorToHTTPStatus(deep))
+	assert.Equal(t, codes.NotFound, ErrorToGRPCCode(deep))
+
+	// The wrapper's own text is never returned as the end-user message
+	codeOnly := fmt.Errorf("select from users: %w", &Error{Code: ENOTFOUND})
+	assert.Equal(t, ENOTFOUND, ErrorCode(codeOnly))
+	assert.Equal(t, "An internal error has occurred. Please contact technical support.", ErrorMessage(codeOnly))
+
+	// An explicit ez code wins over a cancellation deeper in the chain,
+	// with or without a foreign wrapper around it
+	canceledLookup := New(ENOTFOUND, "User not found", context.Canceled)
+	assert.Equal(t, ENOTFOUND, ErrorCode(canceledLookup))
+	assert.Equal(t, ENOTFOUND, ErrorCode(fmt.Errorf("lookup: %w", canceledLookup)))
+
+	// A code-less ez error derives its code through a foreign wrapper too
+	codeless := &Error{Op: "handbuilt", Err: fmt.Errorf("lookup: %w", notFound)}
+	assert.Equal(t, ENOTFOUND, ErrorCode(codeless))
+	assert.Equal(t, "User not found", ErrorMessage(codeless))
+
+	// Several causes: no ez classification, whatever the order. Timeouts
+	// and cancellations are still detected.
+	other := errors.New("other")
+	assert.Equal(t, EINTERNAL, ErrorCode(fmt.Errorf("%w and %w", notFound, other)))
+	assert.Equal(t, EINTERNAL, ErrorCode(fmt.Errorf("%w and %w", other, notFound)))
+	assert.Equal(t, EINTERNAL, ErrorCode(fmt.Errorf("batch: %w", errors.Join(notFound, other))))
+	assert.Equal(t, "An internal error has occurred. Please contact technical support.", ErrorMessage(errors.Join(notFound, other)))
+	assert.Nil(t, ErrorData(errors.Join(New(ENOTFOUND, "x", nil).AddData("k", "v"), other)))
+	assert.Equal(t, ECANCELED, ErrorCode(errors.Join(notFound, context.Canceled)))
 }
 
 type falseTimeoutWrapper struct{ err error }

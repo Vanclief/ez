@@ -21,15 +21,17 @@ const (
 	ECANCELED          = "canceled"           // the caller gave up before the operation finished
 )
 
-// ErrorCode returns the code from a direct ez error chain, if available.
-// Timeouts and cancellations are detected through standard error wrappers so
-// they don't get misreported as internal errors. Otherwise returns EINTERNAL.
+// ErrorCode returns the code of the nearest ez error in the chain, if
+// available. Single-cause wrappers such as fmt.Errorf("%w") are followed, so
+// a wrapped ez error keeps its code. Timeouts and cancellations are detected
+// through standard error wrappers so they don't get misreported as internal
+// errors. Otherwise returns EINTERNAL.
 func ErrorCode(err error) string {
 	if err == nil {
 		return ""
 	}
-	e, ok := err.(*Error)
-	if ok && e != nil {
+	e := nearest(err)
+	if e != nil {
 		if e.Code != "" {
 			return e.Code
 		}
@@ -75,19 +77,41 @@ func (e *Error) AddDataMap(data map[string]interface{}) *Error {
 	return e
 }
 
-// ErrorData returns the data from a direct ez error chain, if available.
+// ErrorData returns the data of the nearest ez error in the chain that has
+// any, following single-cause wrappers the same way ErrorCode does.
 func ErrorData(err error) map[string]interface{} {
 	if err == nil {
 		return nil
 	}
-	e, ok := err.(*Error)
-	if ok && e != nil {
+	e := nearest(err)
+	if e != nil {
 		if e.Data != nil {
 			return e.Data
 		}
 		if e.Err != nil {
 			return ErrorData(e.Err)
 		}
+	}
+	return nil
+}
+
+// nearest returns the first ez error reached from err by following
+// single-cause wrappers, or nil. It deliberately stops at an error with
+// several causes (errors.Join, fmt.Errorf with more than one %w): picking one
+// of them by argument order is the masking and precedence problem ErrorCode
+// avoids for timeouts, so such an error has no ez classification of its own.
+func nearest(err error) *Error {
+	for err != nil {
+		e, ok := err.(*Error)
+		if ok {
+			// A typed nil ends the search: there is nothing to read from it.
+			return e
+		}
+		u, ok := err.(interface{ Unwrap() error })
+		if !ok {
+			return nil
+		}
+		err = u.Unwrap()
 	}
 	return nil
 }
